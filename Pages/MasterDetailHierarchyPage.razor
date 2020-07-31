@@ -6,17 +6,13 @@
 
 @inject NorthwindContext dbContext
 
-<h1 style="display:inline">Hierarchy</h1><a style="margin-left: 10px" href="https://github.com/akorchev/blazor.radzen.com/blob/master/Pages/MasterDetailHierarchyPage.razor" target="_blank">[source code]</a><a style="margin-left: 10px" href="https://www.radzen.com/documentation/blazor/datagrid/" target="_blank">[documentation]</a>
+<h1>DataGrid Master Detail Hierarchy</h1>
 
-<p>This page demonstrates fetching data from the server using <b>IQueryable</b> bound to hierarchical <b>DataGrid</b> with <b>Tabs</b> and <b>DataList</b>.</p>
+<p>This page demonstrates how to use templates to create a Radzen Blazor DataGrid hierarchy.</p>
 
-@if (orders == null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <RadzenGrid AllowFiltering="true" AllowPaging="true" PageSize="3" AllowSorting="true" Data="@orders" TItem="Order">
+<RadzenExample Name="MasterDetailHierarchy" Heading="false" Documentation="false">
+    <RadzenGrid AllowFiltering="true" AllowPaging="true" PageSize="3" AllowSorting="true" RowRender="@RowRender" ExpandMode="DataGridExpandMode.Single"
+                Data="@orders" TItem="Order">
         <Template Context="order">
             <RadzenCard Style="margin-bottom:20px">
                 Company:
@@ -29,7 +25,7 @@ else
                             <Columns>
                                 <RadzenGridColumn TItem="OrderDetail" Property="Order.CustomerID" Title="Order" />
                                 <RadzenGridColumn TItem="OrderDetail" Property="Product.ProductName" Title="Product" />
-                                <RadzenGridColumn TItem="OrderDetail" Property="UnitPrice" Title="Unit Price" >
+                                <RadzenGridColumn TItem="OrderDetail" Property="UnitPrice" Title="Unit Price">
                                     <Template Context="detail">
                                         @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", detail.UnitPrice)
                                     </Template>
@@ -93,18 +89,17 @@ else
             <RadzenGridColumn TItem="Order" Property="ShipCountry" Title="Ship Country" />
         </Columns>
     </RadzenGrid>
-}
-
+</RadzenExample>
 @code {
     IEnumerable<Order> orders;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        orders = await Task.FromResult(from order in dbContext.Orders
-        .Include("Customer")
-        .Include("Employee")
-        .Include("OrderDetails")
-        .Include("OrderDetails.Product")
-        select order);
+        orders = dbContext.Orders.Include("Customer").Include("Employee").Include("OrderDetails").Include("OrderDetails.Product").ToList();
+    }
+
+    void RowRender(RowRenderEventArgs<Order> args)
+    {
+        args.Expandable = args.Data.ShipCountry == "France" || args.Data.ShipCountry == "Brazil";
     }
 }

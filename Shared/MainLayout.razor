@@ -3,7 +3,10 @@
 @using Radzen.Blazor
 @inherits LayoutComponentBase
 @inject ThemeState ThemeState
+@inject ExampleService ExampleService
 @inject NavigationManager UriHelper
+@inject IJSRuntime JSRuntime
+@inject IHttpContextAccessor httpContextAccessor
 
 @if (Theme != "default.css")
 {
@@ -16,13 +19,16 @@
     <ChildContent>
         <div class="row justify-content-start align-items-center">
             <div class="col-6 d-flex align-items-center">
-                <RadzenSidebarToggle Click="@(args => { sidebar0.Toggle(); body0.Toggle(); })">
+                <RadzenSidebarToggle Click="@(args => { sidebarExpanded = !sidebarExpanded; bodyExpanded = !bodyExpanded; })">
                 </RadzenSidebarToggle>
                 <RadzenLabel Text="Radzen Blazor Components">
                 </RadzenLabel>
             </div>
             <div class="col-6 d-flex align-items-center justify-content-end">
-                <NavLink class="btn-secondary d-none d-md-inline-block" style="padding: 0 1rem; margin: 1rem" href="/get-started">Get started</NavLink>
+                <div class="d-none d-md-inline-flex align-items-center">
+                  <Social /> 
+                </div>
+                <NavLink class="ui-button btn-secondary d-none d-md-inline-block" style="padding: 0 1rem; margin: 1rem" href="/get-started">Get started</NavLink>
                 <label class="d-none d-sm-inline-block">Theme:</label>
                 <RadzenDropDown style="margin:0 1rem" TValue="string" TextProperty="Text" ValueProperty="Value" Data="@themes" Value="@ThemeState.CurrentTheme" Change="@ChangeTheme" />
             </div>
@@ -30,7 +36,7 @@
     </ChildContent>
 </RadzenHeader>
 <div style="width:100%">
-    <RadzenBody @ref="@body0">
+    <RadzenBody @ref="@body0" @bind-Expanded="@bodyExpanded">
         <ChildContent>
             <RadzenContentContainer Name="main">
                 @Body
@@ -38,7 +44,7 @@
         </ChildContent>
     </RadzenBody>
 </div>
-<RadzenSidebar @ref="@sidebar0">
+<RadzenSidebar @ref="@sidebar0" @bind-Expanded="@sidebarExpanded">
     <ChildContent>
         <div style="padding: 1rem">
             <span style="width: 100%" class="ui-autocomplete ui-widget">
@@ -46,18 +52,18 @@
             </span>
         </div>
         <RadzenPanelMenu>
-        @foreach (var category in examples)
-        {
-            <RadzenPanelMenuItem @bind-Expanded="@category.Expanded" Text="@category.Name" Path="@category.Path" Icon="@category.Icon">
-            @if (category.Children != null)
+            @foreach (var category in examples)
             {
-                @foreach(var example in category.Children)
-                {
-                    <RadzenPanelMenuItem Text="@example.Name" Path="@example.Path" Icon="@example.Icon" />
-                }
+                <RadzenPanelMenuItem @bind-Expanded="@category.Expanded" Text="@category.Name" Path="@category.Path" Icon="@category.Icon">
+                    @if (category.Children != null)
+                    {
+                        @foreach (var example in category.Children)
+                        {
+                            <RadzenPanelMenuItem Text="@example.Name" Path="@example.Path" Icon="@example.Icon" />
+                        }
+                    }
+                </RadzenPanelMenuItem>
             }
-            </RadzenPanelMenuItem>
-        }
         </RadzenPanelMenu>
     </ChildContent>
 </RadzenSidebar>
@@ -68,323 +74,17 @@
     </ChildContent>
 </RadzenFooter>
 @code {
-            RadzenSidebar sidebar0;
-            RadzenBody body0;
+    RadzenSidebar sidebar0;
+    RadzenBody body0;
+    bool sidebarExpanded = true;
+    bool bodyExpanded = false;
 
-            dynamic themes = new[]
-            {
-        new {Text = "Default", Value = "default"},
+    dynamic themes = new[]
+    {
+        new { Text = "Default", Value = "default"},
         new { Text = "Dark", Value="dark" },
         new { Text = "Software", Value = "software"},
         new { Text = "Humanistic", Value = "humanistic" }
-    };
-
-            class Example
-            {
-                public string Name { get; set; }
-                public string Icon { get; set; }
-                public string Path { get; set; }
-                public bool Expanded { get; set; }
-                public IEnumerable<Example> Children { get; set; }
-                public IEnumerable<string> Tags { get; set; }
-            }
-
-
-            Example[] allExamples = new[] {
-        new Example()
-        {
-            Name = "First Look",
-            Path = "/",
-            Icon = "home"
-        },
-        new Example()
-        {
-            Name = "General",
-            Expanded = true,
-            Children = new [] {
-                new Example()
-                {
-                    Name = "Buttons",
-                    Path = "buttons",
-                    Icon = "account_circle"
-                },
-                new Example()
-                {
-                    Name = "SplitButton",
-                    Path = "splitbutton",
-                    Icon = "playlist_play"
-                },
-                new Example()
-                {
-                    Name = "ProgressBar",
-                    Path = "progressbar",
-                    Icon = "label_outline",
-                    Tags = new [] { "progress", "spinner" }
-                },
-                new Example()
-                {
-                    Name = "Dialog",
-                    Path = "dialog",
-                    Icon = "perm_media",
-                    Tags = new [] { "popup", "window" }
-                },
-                new Example()
-                {
-                    Name = "Notification",
-                    Path = "notification",
-                    Icon = "announcement",
-                    Tags = new [] { "message", "alert" }
-                },
-                new Example()
-                {
-                    Name = "Menu",
-                    Path = "menu",
-                    Icon = "line_weight",
-                    Tags = new [] { "navigation", "dropdown" }
-                },
-                new Example()
-                {
-                    Name = "Upload",
-                    Path = "example-upload",
-                    Icon = "file_upload",
-                    Tags = new [] { "upload", "file"}
-                }
-            }
-        },
-        new Example()
-        {
-            Name="Containers",
-            Children = new [] {
-                new Example()
-                {
-                    Name = "Accordion",
-                    Path = "accordion",
-                    Icon = "view_headline",
-                    Tags = new [] { "panel", "container" }
-                },
-                new Example()
-                {
-                    Name = "Card",
-                    Path = "card",
-                    Icon = "line_style",
-                    Tags = new [] { "container" }
-                },
-                new Example()
-                {
-                    Name = "Fieldset",
-                    Path = "fieldset",
-                    Icon = "account_balance_wallet",
-                    Tags = new [] { "form", "container" }
-                },
-                new Example()
-                {
-                    Name = "Panel",
-                    Path = "panel",
-                    Icon = "content_paste",
-                    Tags = new [] { "container" }
-                },
-                new Example()
-                {
-                    Name = "Tabs",
-                    Path = "tabs",
-                    Icon = "tab",
-                    Tags = new [] { "tabstrip", "tabview", "container" }
-                },
-            }
-        },
-        new Example()
-        {
-            Name="Forms",
-            Children = new [] {
-                new Example()
-                {
-                    Name = "AutoComplete",
-                    Path = "autocomplete",
-                    Icon = "playlist_add",
-                    Tags = new [] { "form", "complete", "suggest", "edit" }
-                },
-                new Example()
-                {
-                    Name = "CheckBox",
-                    Path = "checkbox",
-                    Icon = "check_circle",
-                    Tags = new [] { "form", "edit" }
-                },
-                new Example()
-                {
-                    Name = "CheckBoxList",
-                    Path = "checkboxlist",
-                    Icon = "playlist_add_check",
-                    Tags = new [] { "form", "edit" }
-                },
-                new Example()
-                {
-                    Name = "DatePicker",
-                    Path = "datepicker",
-                    Icon = "date_range",
-                    Tags = new [] { "calendar", "form", "edit" }
-                },
-                new Example()
-                {
-                    Name = "DropDown",
-                    Path = "dropdown",
-                    Icon = "dns",
-                    Tags = new [] { "select", "picker", "form" , "edit" }
-                },
-                new Example()
-                {
-                    Name = "DropDownDataGrid",
-                    Path = "dropdown-datagrid",
-                    Icon = "receipt",
-                    Tags = new [] { "select", "picker", "form", "edit" }
-                },
-                new Example()
-                {
-                    Name = "FileInput",
-                    Path = "fileinput",
-                    Icon = "attach_file",
-                    Tags = new [] { "upload", "form", "edit" }
-                },
-                new Example()
-                {
-                    Name = "ListBox",
-                    Path = "listbox",
-                    Icon = "view_list",
-                    Tags = new [] { "select", "picker", "form", "edit" }
-                },
-                new Example()
-                {
-                    Name = "Numeric",
-                    Path = "numeric",
-                    Icon = "aspect_ratio",
-                    Tags = new [] { "input", "number", "form", "edit" }
-                },
-                new Example()
-                {
-                    Name = "Password",
-                    Path = "password",
-                    Icon = "payment",
-                    Tags = new [] { "input", "form", "edit" }
-                },
-                new Example()
-                {
-                    Name = "RadioButtonList",
-                    Path = "radiobuttonlist",
-                    Icon = "radio_button_checked",
-                    Tags = new [] { "toggle", "form", "edit" }
-                },
-                new Example()
-                {
-                    Name = "Rating",
-                    Path = "rating",
-                    Icon = "star_rate",
-                    Tags = new [] { "star", "form", "edit" }
-                },
-                new Example()
-                {
-                    Name = "SelectBar",
-                    Path = "selectbar",
-                    Icon = "chrome_reader_mode",
-                    Tags = new [] { "form", "edit" }
-                },
-                new Example()
-                {
-                    Name = "TemplateForm",
-                    Path = "templateform",
-                    Icon = "featured_play_list",
-                    Tags = new [] { "form", "edit" }
-                },
-                new Example()
-                {
-                    Name = "TextBox",
-                    Path = "textbox",
-                    Icon = "input",
-                    Tags = new [] { "input", "form", "edit" }
-                },
-                new Example()
-                {
-                    Name = "TextArea",
-                    Path = "textarea",
-                    Icon = "description",
-                    Tags = new [] { "input", "form", "edit" }
-                },
-            },
-        },
-        new Example()
-        {
-            Name="Data",
-            Children = new [] {
-                new Example()
-                {
-                    Name = "DataGrid",
-                    Path = "datagrid",
-                    Icon = "grid_on",
-                    Tags = new [] { "datatable", "datagridview", "dataview", "grid", "table" }
-                },
-                new Example()
-                {
-                    Name = "DataList",
-                    Path = "datalist",
-                    Icon = "list",
-                    Tags = new [] { "dataview", "grid", "table" }
-                },
-            }
-        },
-        new Example()
-        {
-            Name="Application Scenarios",
-            Children = new [] {
-                new Example()
-                {
-                    Name = "Hierarchy",
-                    Path = "master-detail-hierarchy",
-                    Icon = "format_indent_increase",
-                    Tags = new [] { "master", "detail", "datagrid", "table", "dataview" }
-                },
-                new Example()
-                {
-                    Name = "Master/Detail",
-                    Path = "master-detail",
-                    Icon = "dvr",
-                    Tags = new [] { "master", "detail", "datagrid", "table", "dataview" }
-                },
-                new Example()
-                {
-                    Name = "DataGrid InLine Editing",
-                    Path = "datagrid-inline-edit",
-                    Icon = "border_color",
-                    Tags = new [] { "inline", "editor", "datagrid", "table", "dataview" }
-                },
-                new Example()
-                {
-                    Name = "DataGrid Footer Totals",
-                    Path = "datagrid-footer-totals",
-                    Icon = "power_input",
-                    Tags = new [] { "summary", "total", "aggregate", "datagrid", "table", "dataview" }
-                },
-                new Example()
-                {
-                    Name = "Cascading DropDowns",
-                    Path = "cascading-dropdowns",
-                    Icon = "compare_arrows",
-                    Tags = new [] { "related", "parent", "child" }
-                },
-                new Example()
-                {
-                    Name = "Export to Excel and CSV",
-                    Path = "export-excel-csv",
-                    Icon = "import_export",
-                    Tags = new [] { "export", "excel", "csv" }
-                },
-                new Example()
-                {
-                    Name = "DataGrid with LoadData",
-                    Path = "datagrid-loaddata",
-                    Icon = "dashboard",
-                    Tags = new [] { "datagrid", "bind", "load", "data", "loaddata" }
-    },
-            }
-        }, 
     };
 
     IEnumerable<Example> examples;
@@ -399,26 +99,40 @@
 
     protected override void OnInitialized()
     {
-        examples = allExamples;
+        if (httpContextAccessor != null && httpContextAccessor.HttpContext != null &&
+             httpContextAccessor.HttpContext.Request != null && httpContextAccessor.HttpContext.Request.Headers.ContainsKey("User-Agent"))
+        {
+            var userAgent = httpContextAccessor.HttpContext.Request.Headers["User-Agent"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(userAgent))
+            {
+                if (userAgent.Contains("iPhone") || userAgent.Contains("Android") || userAgent.Contains("Googlebot"))
+                {
+                    sidebarExpanded = false;
+                    bodyExpanded = true;
+                }
+            }
+        }
+
+        examples = ExampleService.Examples;
 
         System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            var example = ExampleService.FindCurrent(UriHelper.ToAbsoluteUri(UriHelper.Uri));
+
+            await JSRuntime.InvokeVoidAsync("setTitle", ExampleService.TitleFor(example));
+        }
     }
 
     void FilterPanelMenu(ChangeEventArgs args)
     {
         var term = args.Value.ToString();
 
-        Func<string, bool> contains = value => value.Contains(term, StringComparison.OrdinalIgnoreCase);
-
-        Func<Example, bool> filter = (example) => contains(example.Name) || (example.Tags != null && example.Tags.Any(contains));
-
-        examples = allExamples.Where(category => category.Children != null && category.Children.Any(filter))
-                              .Select(category => new Example()
-                              {
-                                  Name = category.Name,
-                                  Expanded = true,
-                                  Children = category.Children.Where(filter).ToArray()
-                              }).ToList();
+        examples = ExampleService.Filter(term);
     }
 
     void ChangeTheme(object value)
